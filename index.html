@@ -198,7 +198,7 @@
                   <i class="fa fa-calendar-check-o"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-02-02 15:04:46" itemprop="dateModified" datetime="2020-02-02T15:04:46+08:00">2020-02-02</time>
+                <time title="Modified: 2020-02-02 15:22:59" itemprop="dateModified" datetime="2020-02-02T15:22:59+08:00">2020-02-02</time>
               </span>
 
           
@@ -213,170 +213,14 @@
 
       
           <h1 id="Socket编程"><a href="#Socket编程" class="headerlink" title="Socket编程"></a>Socket编程</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>网络上的两个程序通过一个双向的通信连接实现数据的交换，这个连接的一端称为一个 socket。Socket 是应用层与 TCP/IP 协议族通信的中间软件抽象层，它是一组接口。</p>
-<blockquote>
-<p><img src="https://i.loli.net/2020/01/29/1TDijmGzJHxwraS.jpg" alt="TCPsockets.jpg"></p>
-<p>As shown in the figure, the steps for establishing a TCP socket on the client side are the following:</p>
-<ul>
-<li><p>Create a socket using the socket() function;</p>
-</li>
-<li><p>Connect the socket to the address of the server using the connect() function;</p>
-</li>
-<li><p>Send and receive data by means of the read() and write() functions.</p>
-</li>
-</ul>
-<p>The steps involved in establishing a TCP socket on the server side are as follows:</p>
-<ul>
-<li><p>Create a socket with the socket() function;</p>
-</li>
-<li><p>Bind the socket to an address using the bind() function;</p>
-</li>
-<li><p>Listen for connections with the listen() function;</p>
-</li>
-<li><p>Accept a connection with the accept() function system call. This call typically blocks until a client connects with the server.</p>
-</li>
-<li><p>Send and receive data by means of send() and receive().</p>
-</li>
-</ul>
-</blockquote>
-<p>client 需要如下几步来建立一个 TCP socket 连接：</p>
-<ul>
-<li>使用<code>socket()</code>生成socket</li>
-<li>使用<code>connect()</code>和指定地址的server建立连接</li>
-<li>使用<code>read()</code>和<code>write()</code>来读写数据</li>
-</ul>
-<p>server 需要如下几步来建立 TCP socket：</p>
-<ul>
-<li>使用<code>socket()</code>来生成 socket</li>
-<li>使用<code>bind()</code>绑定地址</li>
-<li>使用<code>listen()</code>监听连接</li>
-<li>使用<code>accept()</code>建立连接，这个系统调用通常来说是阻塞的</li>
-<li>使用<code>send()</code>和<code>receive()</code>来发送、接收数据</li>
-</ul>
-<p>引用中的这张图非常重要，整个 socket 网络编程抽象出来都是这样的结构。</p>
-<hr>
-<h2 id="前置知识"><a href="#前置知识" class="headerlink" title="前置知识"></a>前置知识</h2><blockquote>
-<p>Sockets come in two primary flavors. An active socket is con­nect­ed to a remote active socket via an open data con­nec­tion… A passive socket is not con­nect­ed, but rather awaits an in­com­ing con­nec­tion, which will spawn a new active socket once a con­nec­tion is es­tab­lished.</p>
-<p>Each port can have a single passive socket binding to it, await­ing in­com­ing con­nec­tions, and mul­ti­ple active sockets, each cor­re­spond­ing to an open con­nec­tion on the port. It’s as if the factory worker is waiting for new mes­sages to arrive (he rep­re­sents the passive socket), and when one message arrives from a new sender, he ini­ti­ates a cor­re­spon­dence (a con­nec­tion) with them by del­e­gat­ing someone else (an active socket) to ac­tu­al­ly read the packet and respond back to the sender if nec­es­sary. This permits the factory worker to be free to receive new packets.</p>
-</blockquote>
-<p><span id="listening_socket"><strong>监听套接字</strong></span>：是服务器作为客户端连接请求的一个端点，它被创建一次，并存在于服务器的整个生命周期。<code>socket()</code>可以创建一个套接字，默认情况，内核会认为<span style="border-bottom:2px solid red;"><code>socket()</code>创建的套接字是<strong>主动套接字</strong>（active socket）</span>，它存在于一个连接的客户端。而服务器调用<code>listen()</code>告诉内核，该套接字是被服务器而不是客户端使用的，即<code>listen()</code>将一个主动套接字转化为<strong>监听套接字</strong>。<strong>监听套接字</strong>可以接受来自客户端的连接请求。 </p>
-<p><span id="connected_socket"><strong>已连接套接字</strong></span>：是客户端与服务器之间已经建立起来了的连接的一个端点，服务器每次接受连接请求时都会创建一次已连接套接字，它只存在于服务器为一个客户端服务的过程中。</p>
-<p>无论是<strong>监听套接字</strong>，还是<strong>已连接套接字</strong>，都是只存在于服务器端。</p>
-<p><span id="active_socket"><strong>主动套接字</strong></span>：一个主动的 socket 可以调用<code>connect()</code>跟一个被动 socket 建立一个连接，对主动 socket 来说，这叫主动打开。</p>
-<p><span id="passive_socket"><strong>被动套接字</strong></span>：一个通过调用<code>listen()</code>监听要发起连接的 socket，当被动 socket 接受一个连接通常称为被动打开。</p>
-<p><strong>fd</strong>: <strong>f</strong>ile <strong>d</strong>escriptor, <em>Everything</em> is a <em>file</em> in Linux</p>
-<hr>
-<h2 id="函数分析"><a href="#函数分析" class="headerlink" title="函数分析"></a>函数分析</h2><h3 id="socket"><a href="#socket" class="headerlink" title="socket()"></a><code>socket()</code></h3><h4 id="函数原型"><a href="#函数原型" class="headerlink" title="函数原型"></a>函数原型</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">socket</span><span class="params">(<span class="keyword">int</span> domain, <span class="keyword">int</span> type, <span class="keyword">int</span> protocol)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<h4 id="参数说明"><a href="#参数说明" class="headerlink" title="参数说明"></a>参数说明</h4><h5 id="domain"><a href="#domain" class="headerlink" title="domain"></a>domain</h5><p>协议域，又称协议族（family）。常用的协议族有 <em>AF_INET</em> 、 <em>AF_INET6</em> 、 <em>AF_LOCAL<em>（或称 AF_UNIX，Unix 域Socket）、</em>AF_ROUTE</em> 等。协议族决定了 socket 的地址类型，在通信中必须采用对应的地址，如 AF_INET 决定了要用 ipv4 地址（32位的）与端口号（16位的）的组合、AF_UNIX 决定了要用一个绝对路径名作为地址。</p>
-<h5 id="type"><a href="#type" class="headerlink" title="type"></a>type</h5><p>指定 Socket 类型。常用的 socket 类型有 <em>SOCK_STREAM<em>、</em>SOCK_DGRAM<em>、</em>SOCK_RAW<em>、</em>SOCK_PACKET<em>、</em>SOCK_SEQPACKET</em> 等。流式 Socket（<em>SOCK_STREAM</em>）是一种面向连接的 Socket，针对于面向连接的 TCP 服务应用。数据报式 Socket（<em>SOCK_DGRAM</em>）是一种无连接的 Socket，对应于无连接的 UDP 服务应用。</p>
-<h5 id="protocol"><a href="#protocol" class="headerlink" title="protocol"></a>protocol</h5><p>指定协议。常用协议有 <em>IPPROTO_TCP<em>、</em>IPPROTO_UDP<em>、</em>IPPROTO_STCP<em>、</em>IPPROTO_TIPC</em> 等，分别对应 TCP 传输协议、UDP 传输协议、STCP 传输协议、TIPC 传输协议。</p>
-<p><strong>注意</strong>：type 和 protocol 不可以随意组合，如 SOCK_STREAM 不可以跟 IPPROTO_UDP 组合。当第三个参数为0时，会自动选择第二个参数类型对应的默认协议。</p>
-<h4 id="返回值"><a href="#返回值" class="headerlink" title="返回值"></a>返回值</h4><p>如果调用成功就返回新创建的套接字的<strong>描述符</strong>，如果失败就返回 INVALID_SOCKET（Linux 下失败返回-1）。</p>
-<p>套接字描述符（socketfd）是一个整数类型的值。每个进程的进程空间里都有一个套接字描述符表，该表中存放着套接字描述符和套接字数据结构的对应关系。该表中有一个字段存放新创建的套接字的描述符，另一个字段存放套接字数据结构的地址，因此根据套接字描述符就可以找到其对应的套接字数据结构。每个进程在自己的进程空间里都有一个套接字描述符表但是套接字数据结构都是在操作系统的内核缓冲里。</p>
-<hr>
-<h3 id="bind"><a href="#bind" class="headerlink" title="bind()"></a><code>bind()</code></h3><blockquote>
-<p>The bind() assigns a local protocol address to a socket. With the Internet protocols, the address is the combination of an IPv4 or IPv6 address (32-bit or 128-bit) address along with a 16 bit TCP port number.</p>
-</blockquote>
-<p><code>bind()</code>给 socket 分配一个本地的协议地址，根据 Internet 协议，地址是 IPv4（32-bit）或者IPv6地址（128-bit）和 16 bit 的 TCP 端口号的组合。</p>
-<blockquote>
-<p>bind()函数把一个地址族中的特定地址赋给socket。例如对应 AF_INET、AF_INET6 就是把一个 ipv4 或 ipv6 地址和端口号组合赋给socket。</p>
-</blockquote>
-<h4 id="函数原型-1"><a href="#函数原型-1" class="headerlink" title="函数原型"></a>函数原型</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">bind</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr *servaddr, <span class="keyword">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<h4 id="参数说明-1"><a href="#参数说明-1" class="headerlink" title="参数说明"></a>参数说明</h4><h5 id="socketfd"><a href="#socketfd" class="headerlink" title="socketfd"></a>socketfd</h5><p>一个标识<a href="#connected_socket">已连接套接口</a>的描述字。</p>
-<h5 id="address"><a href="#address" class="headerlink" title="address"></a>address</h5><p>是一个 sockaddr 结构指针，该结构中包含了要结合的地址和端口号。</p>
-<h5 id="address-len"><a href="#address-len" class="headerlink" title="address_len"></a>address_len</h5><p>确定 address 缓冲区的长度，系统根据 addrlen 来区分前面的 servaddr 参数的具体类型。</p>
-<h4 id="返回值-1"><a href="#返回值-1" class="headerlink" title="返回值"></a>返回值</h4><p>如果函数执行成功，返回值为0，否则为 SOCKET_ERROR。</p>
-<h4 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h4><p>其中，sockaddr 这个地址结构根据地址创建 socket 时的地址协议族的不同而不同。</p>
-<p>如 IPv4 对应的是：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> &#123;</span></span><br><span class="line">    <span class="keyword">sa_family_t</span>    sin_family; <span class="comment">/* address family: AF_INET */</span></span><br><span class="line">    <span class="keyword">in_port_t</span>      sin_port;   <span class="comment">/* port in network byte order */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> <span class="title">sin_addr</span>;</span>   <span class="comment">/* internet address */</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/* Internet address. */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">in_addr</span> &#123;</span></span><br><span class="line">	<span class="keyword">uint32_t</span>       s_addr;     <span class="comment">/* address in network byte order */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<p>IPv6 对应的是：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in6</span> &#123;</span> </span><br><span class="line">    <span class="keyword">sa_family_t</span>     sin6_family;   <span class="comment">/* AF_INET6 */</span> </span><br><span class="line">    <span class="keyword">in_port_t</span>       sin6_port;     <span class="comment">/* port number */</span> </span><br><span class="line">    <span class="keyword">uint32_t</span>        sin6_flowinfo; <span class="comment">/* IPv6 flow information */</span> </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> <span class="title">sin6_addr</span>;</span>     <span class="comment">/* IPv6 address */</span> </span><br><span class="line">	<span class="keyword">uint32_t</span>        sin6_scope_id; <span class="comment">/* Scope ID (new in 2.4) */</span> </span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">in6_addr</span> &#123;</span> </span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">char</span>   s6_addr[<span class="number">16</span>];   <span class="comment">/* IPv6 address */</span> </span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="listen"><a href="#listen" class="headerlink" title="listen()"></a><code>listen()</code></h3><blockquote>
-<p>The listen() function converts an unconnected socket into a passive socket, indicating that the kernel should accept incoming connection requests directed to this socket.</p>
-</blockquote>
-<p><code>listen()</code>将一个未连接套接字变成<a href="#passive_socket">被动套接字</a>，默认内核会接受目标是这个 socket 的 incoming 连接。</p>
-<p><code>socket()</code>创建的 socket 默认是一个<a href="#active_socket">主动套接字</a>，listen 函数将 socket 变为<strong>被动套接字</strong>的，等待客户的连接请求。</p>
-<blockquote>
-<p>如果作为一个服务器，在调用socket()、bind()之后就可以调用listen()来监听这个socket，如果客户端这时调用connect()发出连接请求，服务器端就会接收到这个请求。</p>
-</blockquote>
-<h4 id="函数原型-2"><a href="#函数原型-2" class="headerlink" title="函数原型"></a>函数原型</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">listen</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">int</span> backlog)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<h4 id="参数说明-2"><a href="#参数说明-2" class="headerlink" title="参数说明"></a>参数说明</h4><h5 id="socketfd-1"><a href="#socketfd-1" class="headerlink" title="socketfd"></a>socketfd</h5><p>要监听的 socket 的描述字。</p>
-<h5 id="backlog"><a href="#backlog" class="headerlink" title="backlog"></a>backlog</h5><p>对应 socket 可以排队的最大连接个数。</p>
-<p>内核为任何一个给定的监听套接口维护两个队列：</p>
-<p><img src="https://i.loli.net/2020/01/29/wmkQExbSrN47zLG.png" alt="20150603155108287.jpg"></p>
-<ol>
-<li>未完成连接队列（incomplete connection queue），每个这样的 SYN 分别对应其中一项：已由某个客户发出并到达服务器，而服务器正在等待完成相应的 TCP 三次握手过程。这些套接口处于 SYN_RCVD 状态。</li>
-<li><span id="completed_connection_queue">已完成连接队列</span>（completed connection queue），每个已完成 TCP 三次握手过程的客户对应其中一项。这些套接口处于 ESTABLISHED 状态。</li>
-</ol>
-<p>当来自客户的 SYN 到达时，TCP 在未完成连接队列中创建一个新项，然后响应以三次握手的第二个分节：服务器的 SYN 响应，其中稍带对客户 SYN 的 ACK（即 SYN+ACK），这一项一直保留在未完成连接队列中，直到三次握手的第三个分节（客户对服务器 SYN 的 ACK ）到达或者该项超时为止（曾经源自 Berkeley 的实现为这些未完成连接的项设置的超时值为75秒）。</p>
-<p>如果三次握手正常完成，该项就从未完成连接队列移到已完成连接队列的队尾。</p>
-<p><strong>backlog</strong> 被定义为上面两个队列的大小之和，大多数实现默认值为 5，当服务器把这个完成连接队列的某个连接取走后，这个队列的位置又空出一个。</p>
-<h4 id="备注-1"><a href="#备注-1" class="headerlink" title="备注"></a>备注</h4><ul>
-<li><p>如果套接字 sockfd 没有显式调用<code>bind()</code>绑定指定的套接字地址的话，<code>listen()</code>会选择本地 ip 地址，并随机选择一个端口号绑定到 sockfd 上，但是一般作为服务器程序，通常会显式调用<code>bind()</code>。</p>
-</li>
-<li><p><code>listen()</code>主要是将<a href="#active_socket">主动套接字</a>变成<a href="#listening_socket">监听套接字</a>，至于参数 backlog 的作用是设置内核中连接队列的长度（这个长度有什么用，后面做详细的解释），<span style="border-bottom:2px solid red;">TCP 三次握手也不是由这个函数完成</span>，listen() 的作用仅仅告诉内核一些信息。</p>
-</li>
-<li><p><strong><code>listen()</code>不会阻塞</strong>，它主要做的事情为，将该套接字和套接字对应的连接队列长度告诉 Linux 内核，然后，<code>listen()</code>就结束。这样的话，当有一个客户端主动连接，Linux 内核就自动完成 TCP 三次握手，将建立好的连接自动存储到队列中，如此重复。所以，只要 TCP 服务器调用了<code>listen()</code>，客户端就可以通过<code>connect()</code>和服务器建立连接，而这个连接的过程是由内核完成。</p>
-</li>
-</ul>
-<hr>
-<h3 id="connect"><a href="#connect" class="headerlink" title="connect()"></a><code>connect()</code></h3><blockquote>
-<p>The connect() function is used by a TCP client to establish a connection with a TCP server.</p>
-</blockquote>
-<p><code>connect()</code>是 TCP client使用的，用来和 TCP server 建立连接用的。</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">connect</span> <span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct sockaddr *servaddr, <span class="keyword">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<h4 id="参数说明-3"><a href="#参数说明-3" class="headerlink" title="参数说明"></a>参数说明</h4><h5 id="socketfd-2"><a href="#socketfd-2" class="headerlink" title="socketfd"></a>socketfd</h5><p>客户端 socket 的描述字。</p>
-<h5 id="sockaddr"><a href="#sockaddr" class="headerlink" title="sockaddr"></a>sockaddr</h5><p>服务器的 socket 地址。</p>
-<h5 id="addrlen"><a href="#addrlen" class="headerlink" title="addrlen"></a>addrlen</h5><p>地址的长度</p>
-<h4 id="备注-2"><a href="#备注-2" class="headerlink" title="备注"></a>备注</h4><ul>
-<li><p>对于 TCP 连接中 client 的<code>connect()</code>，该函数的主要功能是主动连接 server，建立连接是通过<strong>三次握手</strong>，而<span style="border-bottom:2px solid red;">这个连接是由内核完成的</span>，不是这个函数完成的，这个函数的作用仅仅是通知内核，让内核自动完成 TCP 三次握手。</p>
-</li>
-<li><p>对于非阻塞 socket，如果无法立刻连接到服务器，有可能获得的返回值为 <strong>EINPROGRESS</strong>，对于阻塞 socket来说，就可能会阻塞等待连接（如果服务器尚未开启，则会返回 <strong>ECONNREFUSED</strong>）。</p>
-<blockquote>
-<p><strong>EINPROGRESS</strong></p>
-<p>​              The socket is nonblocking and the connection cannot be<br>​              completed immediately.  (UNIX domain sockets failed with<br>​              EAGAIN instead.)  It is possible to select(2) or poll(2) for<br>​              completion by selecting the socket for writing.  After<br>​              select(2) indicates writability, use getsockopt(2) to read the<br>​              SO_ERROR option at level SOL_SOCKET to determine whether<br>​              connect() completed successfully (SO_ERROR is zero) or<br>​              unsuccessfully (SO_ERROR is one of the usual error codes<br>​              listed here, explaining the reason for the failure).</p>
-</blockquote>
-</li>
-</ul>
-<hr>
-<h3 id="accept"><a href="#accept" class="headerlink" title="accept()"></a><code>accept()</code></h3><blockquote>
-<p>The accept() is used to retrieve a connect request and convert that into a request.</p>
-</blockquote>
-<p><del>accept()函数是用来搜索连接请求并把它转换成一个请求。</del></p>
-<blockquote>
-<p>accept 函数由 TCP 服务器调用，用于从<a href="#completed_connection_queue">已完成连接队列</a>返回下一个已完成连接。如果已完成连接队列为空，那么进程被投入睡眠（假定套接字默为默认的阻塞方式）。</p>
-</blockquote>
-<blockquote>
-<p>TCP 服务器端依次调用 socket()、bind()、listen() 之后，就会监听指定的 socket 地址了。TCP 客户端依次调用 socket()、connect() 之后就向 TCP 服务器发送了一个连接请求。TCP 服务器监听到这个请求之后，就会调用 accept() 函数取接收请求，这样连接就建立好了。之后就可以开始网络 I/O 操作了，即类同于普通文件的读写 I/O 操作。</p>
-</blockquote>
-<h4 id="函数原型-3"><a href="#函数原型-3" class="headerlink" title="函数原型"></a>函数原型</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">accept</span><span class="params">(<span class="keyword">int</span> sockfd, struct sockaddr *cliaddr, <span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<h4 id="参数说明-4"><a href="#参数说明-4" class="headerlink" title="参数说明"></a>参数说明</h4><h5 id="socketfd-3"><a href="#socketfd-3" class="headerlink" title="socketfd"></a>socketfd</h5><p>就是上面解释中的<a href="#listening_socket">监听套接字</a>，这个套接字用来监听一个端口，当有一个客户与服务器连接时，它使用这个一个端口号，而此时这个端口号正与这个套接字关联。当然客户不知道套接字这些细节，它只知道一个地址和一个端口号。</p>
-<h5 id="sockaddr-1"><a href="#sockaddr-1" class="headerlink" title="sockaddr"></a>sockaddr</h5><p>结果参数，它用来接受一个返回值，这返回值指定客户端的地址，当然这个地址是通过某个地址结构来描述的，用户应该知道这一个什么样的地址结构。如果对客户的地址不感兴趣，那么可以把这个值设置为 NULL。</p>
-<h5 id="len"><a href="#len" class="headerlink" title="len"></a>len</h5><p>它也是结果的参数，用来接受上述 addr 的结构的大小的，它指明 addr 结构所占有的字节个数。同样的，它也可以被设置为 NULL。</p>
-<h4 id="备注-3"><a href="#备注-3" class="headerlink" title="备注"></a>备注</h4><ul>
-<li><p>如果 accept 成功返回，则服务器与客户已经正确建立连接了，此时服务器通过 accept 返回的套接字来完成与客户的通信。</p>
-</li>
-<li><p><code>accept()</code>从处于 established 状态的连接队列头部取出一个已经完成的连接，如果这个队列没有已经完成的连接，<code>accept()</code>就会阻塞，直到取出队列中已完成的用户连接为止。</p>
-</li>
-<li><p><strong>如果，服务器不能及时调用<code>accept()</code>取走队列中已完成的连接，队列满掉后会怎样呢？</strong>Unix 的做法是，服务器不会对新的SYN进行应答，所以客户端的 connect 就会返回 ETIMEDOUT。Linux 不会如 Unix 一样的拒绝连接，只是有些会延时连接，<strong>而且<code>accept()</code>未必能把已经建立好的连接全部取出来</strong>（如：当队列的长度指定为 0 ），所以写程序时服务器的<code>listen()</code>的第二个参数最好还是根据需要填写，写太大不好（具体可以用 <code>cat /proc/sys/net/core/somaxconn</code>，默认最大值限制是 128），浪费资源，写太小也不好，延时建立连接。</p>
-</li>
-<li><p>阻塞模式和非阻塞模式下，socket 的 accpet 函数表现是不一样的。<img src="https://i.loli.net/2020/01/29/XjuAVdB7D1gOIsi.png" alt="未命名文件 _1_.png"></p>
-<p><img src="https://i.loli.net/2020/01/29/HdMBvFnhEgNTo2b.png" alt="未命名文件 _2_.png"></p>
-<p>在这两种模式下，我们可以看到<strong>非阻塞模式</strong>下，不存在等待 ACCEPT 队列不为空的阶段，它要么返回成功并拿到建立好的连接，要么返回失败。而在<strong>阻塞模式</strong>下，第一个阶段是等待 ACCEPT 队列不为空的阶段，它耗时不定，由客户端是否向自己发起了 TCP 请求而定，可能会耗时很长。</p>
-</li>
-</ul>
-<hr>
-<h3 id="read-write-、send-recv-、sendto-recvfrom-、sendmsg-recvmsg"><a href="#read-write-、send-recv-、sendto-recvfrom-、sendmsg-recvmsg" class="headerlink" title="read()/write()、send()/recv()、sendto()/recvfrom()、sendmsg()/recvmsg()"></a><code>read()</code>/<code>write()</code>、<code>send()</code>/<code>recv()</code>、<code>sendto()</code>/<code>recvfrom()</code>、<code>sendmsg()</code>/<code>recvmsg()</code></h3><h4 id="函数原型-4"><a href="#函数原型-4" class="headerlink" title="函数原型"></a>函数原型</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">send</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">sendto</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len, <span class="keyword">int</span> flags,</span></span></span><br><span class="line"><span class="function"><span class="params">               <span class="keyword">const</span> struct sockaddr *dest_addr, <span class="keyword">socklen_t</span> addrlen)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">sendmsg</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">const</span> struct msghdr *msg, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">write</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> nbytes)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">recv</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">recvfrom</span><span class="params">(<span class="keyword">int</span> sockfd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len, <span class="keyword">int</span> flags,</span></span></span><br><span class="line"><span class="function"><span class="params">                 struct sockaddr *src_addr, <span class="keyword">socklen_t</span> *addrlen)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">recvmsg</span><span class="params">(<span class="keyword">int</span> sockfd, struct msghdr *msg, <span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">read</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> nbytes)</span></span>;</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h3 id="代码示例"><a href="#代码示例" class="headerlink" title="代码示例"></a>代码示例</h3><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;errno.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;netinet/in.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="built_in">std</span>::<span class="built_in">cout</span>;</span><br><span class="line"><span class="keyword">using</span> <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">auto</span> server_socket_fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">if</span> (server_socket_fd == <span class="number">-1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">"socket create failed"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(errno);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"create socket, fd: "</span> &lt;&lt; server_socket_fd &lt;&lt; <span class="string">" sucess."</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    sockaddr_in socket_addr;</span><br><span class="line">    socket_addr.sin_family = AF_INET;</span><br><span class="line">    socket_addr.sin_addr.s_addr = inet_addr(<span class="string">"127.0.0.1"</span>);</span><br><span class="line">    socket_addr.sin_port = <span class="number">7001</span>;</span><br><span class="line"></span><br><span class="line">    bind(server_socket_fd, (sockaddr*)(&amp;socket_addr), <span class="keyword">sizeof</span>(socket_addr));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">listen</span>(server_socket_fd, <span class="number">5</span>) != <span class="number">0</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        perror(<span class="string">"listen failed"</span>);</span><br><span class="line">        <span class="built_in">exit</span>(errno);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">cout</span> &lt;&lt; <span class="string">"begin listening"</span> &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line"></span><br><span class="line">    sockaddr_in client_addr;</span><br><span class="line">    <span class="keyword">socklen_t</span> client_addr_len = <span class="keyword">sizeof</span>(client_addr);</span><br><span class="line">    <span class="keyword">int</span> new_connect_socket_fd;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        new_connect_socket_fd = accept(server_socket_fd, (sockaddr*)(&amp;client_addr), &amp;client_addr_len);</span><br><span class="line">        <span class="keyword">if</span> (new_connect_socket_fd == <span class="number">-1</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            perror(<span class="string">"accept failed"</span>);</span><br><span class="line">            <span class="built_in">exit</span>(errno);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">cout</span> &lt;&lt; <span class="string">"accept new client from: &#123;ip: "</span> &lt;&lt; inet_ntoa(client_addr.sin_addr) &lt;&lt; <span class="string">", port: "</span> &lt;&lt; client_addr.sin_port &lt;&lt; <span class="string">"&#125;, new_socket_fd: "</span> &lt;&lt; new_connect_socket_fd &lt;&lt; <span class="built_in">endl</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">close</span>(server_socket_fd);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2019/04/16/linux-socket-programming/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
